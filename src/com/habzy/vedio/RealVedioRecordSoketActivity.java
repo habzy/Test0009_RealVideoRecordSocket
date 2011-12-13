@@ -125,6 +125,8 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 		}
 		if (null != mCameraDevice) {
 			mCameraDevice.lock();
+			mCameraDevice.release();
+			mCameraDevice = null;
 		}
 	}
 
