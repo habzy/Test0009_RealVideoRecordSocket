@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import android.app.Activity;
+import android.hardware.Camera;
+import android.hardware.Camera.CameraInfo;
 import android.media.MediaRecorder;
 import android.net.LocalSocket;
 import android.os.Bundle;
@@ -24,7 +26,8 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 	private static final int MENU_START = 1;
 	private static final int MENU_STOP = 2;
 
-	private RelativeLayout camera;
+	private RelativeLayout mCameraLayout;
+	private Camera mCameraDevice;
 	private MediaRecorder mRecorder;
 	private SurfaceView mSurfaceView;
 	private File myRecAudioFile;
@@ -41,7 +44,7 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
-		camera = (RelativeLayout) findViewById(R.id.cameraLayout);
+		mCameraLayout = (RelativeLayout) findViewById(R.id.cameraLayout);
 		mSurfaceView = (MySurface) findViewById(R.id.Surface);
 
 		SurfaceHolder holder = mSurfaceView.getHolder();
@@ -120,38 +123,61 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 			mRecorder.release();
 			mRecorder = null;
 		}
+		if (null != mCameraDevice) {
+			mCameraDevice.lock();
+		}
 	}
 
 	public void initMediaRecorder() {
 		try {
+			if (mCameraDevice == null) {
+				int defaultCameraId = 1;
+				int numberOfCameras = Camera.getNumberOfCameras();
+				CameraInfo cameraInfo = new CameraInfo();
+				for (int i = 0; i < numberOfCameras; i++) {
+					Camera.getCameraInfo(i, cameraInfo);
+					if (cameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT) {
+						defaultCameraId = i;
+					}
+				}
+
+				mCameraDevice = Camera.open(defaultCameraId);
+				// try {
+				// mCameraDevice.setPreviewDisplay(mSurfaceView.getHolder());
+				// } catch (IOException e) {
+				// e.printStackTrace();
+				// }
+				//
+				try {
+					mCameraDevice.setDisplayOrientation(90);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
 
 			mRecorder = new MediaRecorder();
-			// mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-			// mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+			mCameraDevice.unlock();
+			mRecorder.setCamera(mCameraDevice);
 			mRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
 			mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
 			mRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H263);
-			// mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 
-			// mRecorder.setVideoFrameRate(20);
-			{
-				mRecorder.setVideoSize(320, 240);
-			}
-			mRecorder.setPreviewDisplay(mSurfaceView.getHolder().getSurface());
-
-			// myRecAudioFile = File.createTempFile("video", ".mpeg", dir);
 			myRecAudioFile = File.createTempFile("video", ".3gp", dir);
 			if (myRecAudioFile != null) {
 				Log.w(TAG, "file" + myRecAudioFile.getAbsolutePath());
 			} else {
 				Log.w(TAG, "file create failure");
 			}
+			mRecorder.setVideoFrameRate(15);
 
 			// fout = new FileOutputStream(myRecAudioFile.getAbsolutePath());
 
 			// mRecorder.setOutputFile(sender.getFileDescriptor());
-			mRecorder.setOutputFile(mPath
-					+ SystemClock.currentThreadTimeMillis() + ".3gp");
+			mRecorder.setOutputFile(myRecAudioFile.getAbsolutePath());
+			mRecorder.setVideoSize(320, 240);
+			mRecorder.setPreviewDisplay(mSurfaceView.getHolder().getSurface());
+			mRecorder.setOrientationHint(180);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
