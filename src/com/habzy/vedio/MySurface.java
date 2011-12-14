@@ -19,15 +19,15 @@ public class MySurface extends SurfaceView {
 	List<Size> mSupportedPreviewSizes;
 	Size mPreviewSize;
 
-	Camera mCamera;
+	Camera mCamera = null;
 	private SurfaceHolder holder;
 
 	public MySurface(Context context, AttributeSet attrs) {
 		super(context, attrs);
 
-		holder = getHolder();
-		holder.addCallback(mCallback);
-		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		// holder = getHolder();
+		// holder.addCallback(mCallback);
+		// holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 	}
 
@@ -36,55 +36,54 @@ public class MySurface extends SurfaceView {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 	}
 
-	public Camera getCamera()
-	{
+	public Camera getCamera() {
 		return mCamera;
 	}
-	
+
 	private Callback mCallback = new Callback() {
 
 		@Override
 		public void surfaceCreated(SurfaceHolder holder) {
-			Log.d(TAG, "surfaceCreated");
-			if (mCamera == null) {
-				int defaultCameraId = 1;
-				int numberOfCameras = Camera.getNumberOfCameras();
-				CameraInfo cameraInfo = new CameraInfo();
-				for (int i = 0; i < numberOfCameras; i++) {
-					Camera.getCameraInfo(i, cameraInfo);
-					if (cameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT) {
-						defaultCameraId = i;
-					}
-				}
-
-				mCamera = Camera.open(defaultCameraId);
-				try {
-					mCamera.setPreviewDisplay(holder);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-
-				try {
-					mCamera.setDisplayOrientation(90);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-
-			}
+			// Log.d(TAG, "surfaceCreated");
+			// if (mCamera == null) {
+			// int defaultCameraId = 1;
+			// int numberOfCameras = Camera.getNumberOfCameras();
+			// CameraInfo cameraInfo = new CameraInfo();
+			// for (int i = 0; i < numberOfCameras; i++) {
+			// Camera.getCameraInfo(i, cameraInfo);
+			// if (cameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT) {
+			// defaultCameraId = i;
+			// }
+			// }
+			//
+			// mCamera = Camera.open(defaultCameraId);
+			// try {
+			// mCamera.setPreviewDisplay(holder);
+			// } catch (IOException e) {
+			// e.printStackTrace();
+			// }
+			//
+			// try {
+			// mCamera.setDisplayOrientation(90);
+			// } catch (Exception e) {
+			// e.printStackTrace();
+			// }
+			//
+			// }
 		}
 
 		@Override
 		public void surfaceChanged(SurfaceHolder holder, int format, int width,
 				int height) {
-			mCamera.startPreview();
+			// mCamera.startPreview();
 		}
 
 		@Override
 		public void surfaceDestroyed(SurfaceHolder holder) {
 			Log.d(TAG, "surfaceChanged");
-//			mCamera.stopPreview();
-//			mCamera.release();
-//			mCamera = null;
+			// mCamera.stopPreview();
+			// mCamera.release();
+			// mCamera = null;
 		}
 	};
 

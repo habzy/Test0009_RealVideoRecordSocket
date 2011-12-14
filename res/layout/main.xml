@@ -4,6 +4,7 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
+    <!--
     <RelativeLayout
         android:id="@+id/shownLayout"
         android:layout_width="fill_parent"
@@ -12,7 +13,7 @@
         android:background="#FFFFFFFF"
         android:visibility="visible" >
 
-        <!-- android:layout_width="640px" android:layout_height="480px" -->
+        android:layout_width="640px" android:layout_height="480px"
 
         <SurfaceView
             android:id="@+id/shown"
@@ -20,7 +21,8 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true" >
         </SurfaceView>
-    </RelativeLayout>
+    </RelativeLayout>
+    -->
 
     <RelativeLayout
         android:id="@+id/cameraLayout"
@@ -31,11 +33,13 @@
         android:layout_marginTop="3dip"
         android:visibility="visible" >
 
-        <RelativeLayout
+        <!--
+             <RelativeLayout
             android:layout_width="138dip"
             android:layout_height="160dip"
             android:background="@drawable/preview_backgroud" >
         </RelativeLayout>
+        -->
 
         <RelativeLayout
             android:layout_width="138dip"
