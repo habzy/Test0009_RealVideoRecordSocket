@@ -74,6 +74,19 @@ public abstract class Consumer implements Runnable {
 		} else {
 			Log.w(TAG, "file create failure");
 		}
+		
+		 byte[] h264sps={0x67,0x42,0x00,0x0C,(byte) 0x96,0x54,0x0B,0x04,(byte) 0xA2};  
+         byte[] h264pps={0x68,(byte) 0xCE,0x38,(byte) 0x80};  
+         byte[] h264head={0,0,0,1};  
+         try {  
+             raf.write(h264head);  
+             raf.write(h264sps);  
+             raf.write(h264head);  
+             raf.write(h264pps);  
+         } catch (IOException e1) {  
+             // TODO Auto-generated catch block  
+             e1.printStackTrace();  
+         }  
 
 	}
 

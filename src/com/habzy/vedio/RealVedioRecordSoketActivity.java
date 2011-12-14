@@ -323,8 +323,8 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback,
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
-				 consumer.putData(System.currentTimeMillis(), buffer, 33);
-				Log.d(TAG, "init aa[]");
+//				 consumer.putData(System.currentTimeMillis(), buffer, 33);
+//				Log.d(TAG, "init aa[]");
 //				byte[] aa = { 0x01, 0x42, (byte) 0x80, 0x0A, (byte) 0xFF,
 //						(byte) 0xE1, 0x00, 0x12, 0x67, 0x42, (byte) 0x80, 0x0A,
 //						(byte) 0xE9, 0x02, (byte) 0xC1, 0x29, 0x08, 0x00, 0x00,
