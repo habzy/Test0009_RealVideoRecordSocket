@@ -1,14 +1,18 @@
 package com.habzy.vedio;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 import android.app.Activity;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.net.LocalServerSocket;
 import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -20,7 +24,8 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.RelativeLayout;
 
-public class RealVedioRecordSoketActivity extends Activity implements Callback {
+public class RealVedioRecordSoketActivity extends Activity implements Callback,
+		MediaRecorder.OnErrorListener, MediaRecorder.OnInfoListener {
 	private static final String TAG = "RealVedioRecordSoketActivity";
 	private static final int MENU_START = 1;
 	private static final int MENU_STOP = 2;
@@ -28,14 +33,16 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 
 	private RelativeLayout mCameraLayout;
 	private Camera mCameraDevice;
-	private MediaRecorder mRecorder;
 	private MySurface mPreview;
 	private SurfaceView mShownSurfaceView;
-	private File myRecFile;
 
+	private MediaRecorder mMediaRecorder;
+	private boolean mMediaRecorderRecording = false;
 	private MediaPlayer mPlayer;
-	private LocalSocket mSokectBuffer;
+	private LocalSocket receiver, sender;
+	private LocalServerSocket lss;
 
+	private File myRecFile;
 	private File dir;
 	private String mPath;
 
@@ -63,9 +70,23 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 		if (!dir.exists()) {
 			dir.mkdir();
 		}
-		
-		mSokectBuffer = new LocalSocket();
-		
+
+		// Habzy: Copy the code from
+		// "http://blog.csdn.net/peijiangping1989/article/details/6942585"
+		receiver = new LocalSocket();
+		try {
+			lss = new LocalServerSocket("Video");
+			receiver.connect(new LocalSocketAddress("Video"));
+			receiver.setReceiveBufferSize(500000);
+			receiver.setSendBufferSize(500000);
+			sender = lss.accept();
+			sender.setReceiveBufferSize(500000);
+			sender.setSendBufferSize(500000);
+		} catch (IOException e) {
+			finish();
+			return;
+		}
+
 	}
 
 	/*
@@ -94,8 +115,8 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 		case MENU_START: {
 			Log.d(TAG, "MENU_START!");
 			mCameraLayout.setVisibility(View.VISIBLE);
-			initMediaRecorder();
-			startMediaRecorder();
+			initializeVideo();
+			startVideoRecording();
 			break;
 		}
 		case MENU_STOP: {
@@ -119,7 +140,7 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 			try {
 				mPlayer = new MediaPlayer();
 				mPlayer.setDisplay(mShownSurfaceView.getHolder());
-//				mPlayer.setDataSource(mSokectBuffer.getFileDescriptor());
+				// mPlayer.setDataSource(mSokectBuffer.getFileDescriptor());
 				mPlayer.setDataSource(myRecFile.getAbsolutePath());
 				mPlayer.prepare();
 
@@ -139,24 +160,8 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 
 	}
 
-	public void startMediaRecorder() {
-		// begin to write
-		try {
-			mRecorder.prepare();
-			mRecorder.start();
-		} catch (IOException exception) {
-			mCameraDevice.lock();
-			exception.printStackTrace();
-		}
-	}
-
 	public void stopMediaRecorder() {
-		if (mRecorder != null) {
-			mRecorder.stop();
-			mRecorder.reset();
-			mRecorder.release();
-			mRecorder = null;
-		}
+		releaseMediaRecorder();
 		if (null != mCameraDevice) {
 			mCameraDevice.lock();
 			mCameraDevice.stopPreview();
@@ -188,12 +193,18 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 
 			}
 
-			mRecorder = new MediaRecorder();
+			if (mMediaRecorder == null) {
+				mMediaRecorder = new MediaRecorder();
+			} else {
+				mMediaRecorder.reset();
+			}
+
 			mCameraDevice.unlock();
-			mRecorder.setCamera(mCameraDevice);
-			mRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-			mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-			mRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H263);
+			mMediaRecorder.setCamera(mCameraDevice);
+			mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+			mMediaRecorder
+					.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+			mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H263);
 
 			myRecFile = File.createTempFile("video", ".3gp", dir);
 			if (myRecFile != null) {
@@ -201,19 +212,124 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 			} else {
 				Log.w(TAG, "file create failure");
 			}
-			mRecorder.setVideoFrameRate(15);
+			mMediaRecorder.setVideoFrameRate(15);
 
-			mRecorder.setVideoSize(320, 240);
-			mRecorder.setOrientationHint(180);
-			mRecorder.setPreviewDisplay(mPreview.getHolder().getSurface());
+			mMediaRecorder.setVideoSize(320, 240);
+			mMediaRecorder.setOrientationHint(180);
+			mMediaRecorder.setPreviewDisplay(mPreview.getHolder().getSurface());
 
-			// fout = new FileOutputStream(myRecAudioFile.getAbsolutePath());
+			mMediaRecorder.setMaxDuration(0);
+			mMediaRecorder.setMaxFileSize(0);
+			mMediaRecorder.setOutputFile(sender.getFileDescriptor());
 
-//			 mRecorder.setOutputFile(mSokectBuffer.getFileDescriptor());
-			mRecorder.setOutputFile(myRecFile.getAbsolutePath());
+			// mMediaRecorder.setOutputFile(myRecFile.getAbsolutePath());
 		} catch (Exception e) {
 			e.printStackTrace();
+			releaseMediaRecorder();
 		}
+	}
+
+	private void releaseMediaRecorder() {
+		Log.d(TAG, "Releasing media recorder.");
+		if (mMediaRecorder != null) {
+			if (mMediaRecorderRecording) {
+				try {
+					mMediaRecorder.setOnErrorListener(null);
+					mMediaRecorder.setOnInfoListener(null);
+					mMediaRecorder.stop();
+				} catch (RuntimeException e) {
+					Log.e(TAG, "stop fail: " + e.getMessage());
+				}
+				mMediaRecorderRecording = false;
+			}
+			mMediaRecorder.reset();
+			mMediaRecorder.release();
+			mMediaRecorder = null;
+		}
+	}
+
+	private boolean initializeVideo() {
+
+		initMediaRecorder();
+
+		try {
+			mMediaRecorder.setOnInfoListener(this);
+			mMediaRecorder.setOnErrorListener(this);
+			mMediaRecorder.prepare();
+			mMediaRecorder.start();
+		} catch (IOException exception) {
+			releaseMediaRecorder();
+			finish();
+			return false;
+		}
+		return true;
+	}
+
+	private void startVideoRecording() {
+		new Thread() {
+			public void run() {
+				int frame_size = 20000;
+				byte[] buffer = new byte[1024 * 64];
+				int num, number = 0;
+				InputStream fis = null;
+				try {
+					fis = receiver.getInputStream();
+				} catch (IOException e1) {
+					return;
+				}
+				number = 0;
+				releaseMediaRecorder();
+				while (true) {
+					Log.d(TAG, "ok");
+					try {
+						num = fis.read(buffer, number, frame_size);
+						number += num;
+						if (num < frame_size) {
+							Log.d(TAG, "recoend break");
+							break;
+						}
+					} catch (IOException e) {
+						Log.d(TAG, "exception break");
+						break;
+					}
+				}
+				initializeVideo();
+				number = 0;
+				Consumer consumer = new Publisher();// Publisher继承了Consumer
+				Thread consumerThread = new Thread((Runnable) consumer);
+				consumer.setRecording(true);// 设置线程状态;
+				consumerThread.start();// 开始发布数据流
+				DataInputStream dis = new DataInputStream(fis);
+				try {
+					dis.read(buffer, 0, 32);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				byte[] aa = { 0x01, 0x42, (byte) 0x80, 0x0A, (byte) 0xFF,
+						(byte) 0xE1, 0x00, 0x12, 0x67, 0x42, (byte) 0x80, 0x0A,
+						(byte) 0xE9, 0x02, (byte) 0xC1, 0x29, 0x08, 0x00, 0x00,
+						0x1F, 0x40, 0x00, 0x04, (byte) 0xE2, 0x00, 0x20, 0x01,
+						0x00, 0x04, 0x68, (byte) 0xCE, 0x3C, (byte) 0x80 };
+				consumer.putData(System.currentTimeMillis(), aa, 33);
+				while (true) {
+					try {
+						int h264length = dis.readInt();
+						number = 0;
+						while (number < h264length) {
+							int lost = h264length - number;
+							num = fis.read(buffer, 0,
+									frame_size < lost ? frame_size : lost);
+							number += num;
+							consumer.putData(System.currentTimeMillis(),
+									buffer, num);
+						}
+					} catch (IOException e) {
+						break;
+					}
+				}
+				consumer.setRecording(false);// 设置线程状态;
+			}
+		}.start();
 	}
 
 	@Override
@@ -233,5 +349,32 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 	public void surfaceDestroyed(SurfaceHolder holder) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public void onInfo(MediaRecorder mr, int what, int extra) {
+		switch (what) {
+		case MediaRecorder.MEDIA_RECORDER_INFO_UNKNOWN: {
+			Log.d(TAG, "MEDIA_RECORDER_INFO_UNKNOWN");
+			break;
+		}
+		case MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED: {
+			Log.d(TAG, "MEDIA_RECORDER_INFO_MAX_DURATION_REACHED");
+			break;
+		}
+		case MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED: {
+			Log.d(TAG, "MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED");
+			break;
+		}
+		}
+
+	}
+
+	@Override
+	public void onError(MediaRecorder mr, int what, int extra) {
+		if (what == MediaRecorder.MEDIA_RECORDER_ERROR_UNKNOWN) {
+			Log.e(TAG, "MEDIA_RECORDER_ERROR_UNKNOWN");
+			finish();
+		}
 	}
 }
