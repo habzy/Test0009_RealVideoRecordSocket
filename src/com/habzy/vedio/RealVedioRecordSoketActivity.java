@@ -1,17 +1,16 @@
 package com.habzy.vedio;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import android.app.Activity;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.LocalSocket;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,16 +24,18 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 	private static final String TAG = "RealVedioRecordSoketActivity";
 	private static final int MENU_START = 1;
 	private static final int MENU_STOP = 2;
+	private static final int MENU_PLAY = 3;
 
 	private RelativeLayout mCameraLayout;
 	private Camera mCameraDevice;
 	private MediaRecorder mRecorder;
-	private SurfaceView mSurfaceView;
-	private File myRecAudioFile;
+	private MySurface mPreview;
+	private SurfaceView mShownSurfaceView;
+	private File myRecFile;
 
-	private FileOutputStream fout;
+	private MediaPlayer mPlayer;
+	private LocalSocket mSokectBuffer;
 
-	LocalSocket receiver, sender;
 	private File dir;
 	private String mPath;
 
@@ -45,11 +46,11 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 		setContentView(R.layout.main);
 
 		mCameraLayout = (RelativeLayout) findViewById(R.id.cameraLayout);
-		mSurfaceView = (MySurface) findViewById(R.id.Surface);
+		mPreview = (MySurface) findViewById(R.id.preview);
+		mShownSurfaceView = (SurfaceView) findViewById(R.id.shown);
 
-		SurfaceHolder holder = mSurfaceView.getHolder();
+		SurfaceHolder holder = mShownSurfaceView.getHolder();
 		holder.addCallback(this);
-		holder.setFixedSize(400, 300);
 		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 		File defaultDir = Environment.getExternalStorageDirectory();
@@ -62,6 +63,9 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 		if (!dir.exists()) {
 			dir.mkdir();
 		}
+		
+		mSokectBuffer = new LocalSocket();
+		
 	}
 
 	/*
@@ -74,6 +78,7 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 		Log.d(TAG, "Create menu....");
 		menu.add(Menu.NONE, MENU_START, Menu.NONE, R.string.menu_start);
 		menu.add(Menu.NONE, MENU_STOP, Menu.NONE, R.string.menu_stop);
+		menu.add(Menu.NONE, MENU_PLAY, Menu.NONE, R.string.menu_play);
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -88,21 +93,50 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 		switch (item.getItemId()) {
 		case MENU_START: {
 			Log.d(TAG, "MENU_START!");
-			// camera.setVisibility(View.VISIBLE);
+			mCameraLayout.setVisibility(View.VISIBLE);
 			initMediaRecorder();
 			startMediaRecorder();
 			break;
 		}
 		case MENU_STOP: {
 			Log.d(TAG, "MENU_STOP!");
-			// camera.setVisibility(View.GONE);
+			mCameraLayout.setVisibility(View.GONE);
 			stopMediaRecorder();
 			break;
+		}
+		case MENU_PLAY: {
+			playMedia();
 		}
 		default:
 			break;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	private void playMedia() {
+		mCameraLayout.setVisibility(View.GONE);
+		if (null == mPlayer) {
+			try {
+				mPlayer = new MediaPlayer();
+				mPlayer.setDisplay(mShownSurfaceView.getHolder());
+//				mPlayer.setDataSource(mSokectBuffer.getFileDescriptor());
+				mPlayer.setDataSource(myRecFile.getAbsolutePath());
+				mPlayer.prepare();
+
+				mPlayer.start();
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalStateException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
+
 	}
 
 	public void startMediaRecorder() {
@@ -111,7 +145,7 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 			mRecorder.prepare();
 			mRecorder.start();
 		} catch (IOException exception) {
-			// releaseMediaRecorder();
+			mCameraDevice.lock();
 			exception.printStackTrace();
 		}
 	}
@@ -125,12 +159,15 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 		}
 		if (null != mCameraDevice) {
 			mCameraDevice.lock();
+			mCameraDevice.stopPreview();
 			mCameraDevice.release();
 			mCameraDevice = null;
 		}
+
 	}
 
 	public void initMediaRecorder() {
+		mCameraDevice = mPreview.getCamera();
 		try {
 			if (mCameraDevice == null) {
 				int defaultCameraId = 1;
@@ -142,14 +179,7 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 						defaultCameraId = i;
 					}
 				}
-
 				mCameraDevice = Camera.open(defaultCameraId);
-				// try {
-				// mCameraDevice.setPreviewDisplay(mSurfaceView.getHolder());
-				// } catch (IOException e) {
-				// e.printStackTrace();
-				// }
-				//
 				try {
 					mCameraDevice.setDisplayOrientation(90);
 				} catch (Exception e) {
@@ -165,21 +195,22 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback {
 			mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
 			mRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H263);
 
-			myRecAudioFile = File.createTempFile("video", ".3gp", dir);
-			if (myRecAudioFile != null) {
-				Log.w(TAG, "file" + myRecAudioFile.getAbsolutePath());
+			myRecFile = File.createTempFile("video", ".3gp", dir);
+			if (myRecFile != null) {
+				Log.w(TAG, "file" + myRecFile.getAbsolutePath());
 			} else {
 				Log.w(TAG, "file create failure");
 			}
 			mRecorder.setVideoFrameRate(15);
 
+			mRecorder.setVideoSize(320, 240);
+			mRecorder.setOrientationHint(180);
+			mRecorder.setPreviewDisplay(mPreview.getHolder().getSurface());
+
 			// fout = new FileOutputStream(myRecAudioFile.getAbsolutePath());
 
-			// mRecorder.setOutputFile(sender.getFileDescriptor());
-			mRecorder.setOutputFile(myRecAudioFile.getAbsolutePath());
-			mRecorder.setVideoSize(320, 240);
-			mRecorder.setPreviewDisplay(mSurfaceView.getHolder().getSurface());
-			mRecorder.setOrientationHint(180);
+//			 mRecorder.setOutputFile(mSokectBuffer.getFileDescriptor());
+			mRecorder.setOutputFile(myRecFile.getAbsolutePath());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

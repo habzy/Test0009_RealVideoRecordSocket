@@ -25,9 +25,9 @@ public class MySurface extends SurfaceView {
 	public MySurface(Context context, AttributeSet attrs) {
 		super(context, attrs);
 
-//		holder = getHolder();// 获得surfaceHolder引用
-//		holder.addCallback(mCallback);
-//		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);// 设置类型
+		holder = getHolder();
+		holder.addCallback(mCallback);
+		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 	}
 
@@ -36,6 +36,11 @@ public class MySurface extends SurfaceView {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 	}
 
+	public Camera getCamera()
+	{
+		return mCamera;
+	}
+	
 	private Callback mCallback = new Callback() {
 
 		@Override
@@ -77,9 +82,9 @@ public class MySurface extends SurfaceView {
 		@Override
 		public void surfaceDestroyed(SurfaceHolder holder) {
 			Log.d(TAG, "surfaceChanged");
-			mCamera.stopPreview();
-			mCamera.release();
-			mCamera = null;
+//			mCamera.stopPreview();
+//			mCamera.release();
+//			mCamera = null;
 		}
 	};
 

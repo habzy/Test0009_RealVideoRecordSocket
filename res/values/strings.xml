@@ -2,8 +2,9 @@
 <resources>
 
     <string name="hello">Hello World, RealVedioRecordSoketActivity!</string>
-    <string name="app_name">Test0013_RealVedioRecordSoket</string>
+    <string name="app_name">Test0009_RealVedioRecordSocket</string>
     <string name="menu_start">Start</string>
     <string name="menu_stop">Stop</string>
+     <string name="menu_play">Play</string>
 
 </resources>
