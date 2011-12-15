@@ -4,26 +4,6 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <!--
-    <RelativeLayout
-        android:id="@+id/shownLayout"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_alignParentRight="true"
-        android:background="#FFFFFFFF"
-        android:visibility="visible" >
-
-        android:layout_width="640px" android:layout_height="480px"
-
-        <SurfaceView
-            android:id="@+id/shown"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true" >
-        </SurfaceView>
-    </RelativeLayout>
-    -->
-
     <RelativeLayout
         android:id="@+id/cameraLayout"
         android:layout_width="wrap_content"
@@ -38,7 +18,7 @@
             android:layout_width="138dip"
             android:layout_height="160dip"
             android:background="@drawable/preview_backgroud" >
-        </RelativeLayout>
+        </RelativeLayout>
         -->
 
         <RelativeLayout
@@ -54,6 +34,24 @@
                 android:layout_centerInParent="true" >
             </com.habzy.vedio.MySurface>
         </RelativeLayout>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/shownLayout"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_alignParentRight="true"
+        android:background="#FFFFFFFF"
+        android:visibility="gone" >
+
+        <!-- android:layout_width="640px" android:layout_height="480px" -->
+
+        <SurfaceView
+            android:id="@+id/shown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true" >
+        </SurfaceView>
     </RelativeLayout>
 
 </RelativeLayout>
