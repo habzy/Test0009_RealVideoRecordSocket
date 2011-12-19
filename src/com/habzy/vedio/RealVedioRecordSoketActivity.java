@@ -9,6 +9,7 @@ import java.io.RandomAccessFile;
 import android.app.Activity;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.LocalServerSocket;
@@ -115,14 +116,15 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback,
 		case MENU_START: {
 			Log.d(TAG, "MENU_START!");
 			mCameraLayout.setVisibility(View.VISIBLE);
-			mShownLayout.setVisibility(View.GONE);
+//			mShownLayout.setVisibility(View.GONE);
+			mShownLayout.setVisibility(View.VISIBLE);
 			initializeVideo();
 			startVideoRecording();
 			break;
 		}
 		case MENU_STOP: {
 			Log.d(TAG, "MENU_STOP!");
-			 mCameraLayout.setVisibility(View.GONE);
+			mCameraLayout.setVisibility(View.GONE);
 
 			if (null != mThread) {
 				mThread.interrupt();
@@ -149,14 +151,16 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback,
 	}
 
 	private void playMedia() {
-		mCameraLayout.setVisibility(View.GONE);
-		mShownLayout.setVisibility(View.VISIBLE);
+//		mCameraLayout.setVisibility(View.GONE);
+
 		if (null == mPlayer) {
 			try {
 				mPlayer = new MediaPlayer();
 				mPlayer.setDisplay(mShownSurfaceView.getHolder());
 				// Play with file which record.
-				mPlayer.setDataSource(mRecFile.getAbsolutePath());
+				// mPlayer.setAudioStreamType(AudioManager.)
+//				mPlayer.setDataSource(mRecFile.getAbsolutePath());
+				mPlayer.setDataSource(receiver.getFileDescriptor());
 				mPlayer.prepare();
 				mPlayer.start();
 			} catch (IllegalArgumentException e) {
@@ -253,11 +257,11 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback,
 					.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
 			mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
 
-			mMediaRecorder.setVideoFrameRate(20);
+			mMediaRecorder.setVideoFrameRate(15);
 
 			// mMediaRecorder.setVideoSize(320, 240);
-			mMediaRecorder.setVideoSize(352, 288);
-			mMediaRecorder.setOrientationHint(180);
+			mMediaRecorder.setVideoSize(176, 144);
+			// mMediaRecorder.setOrientationHint(180);
 			mMediaRecorder.setPreviewDisplay(mPreview.getHolder().getSurface());
 
 			mMediaRecorder.setMaxDuration(0);
@@ -304,62 +308,80 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback,
 					return;
 				}
 
-				try {
-					sleep(200);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-
 				// TODO what these code for???
-				releaseMediaRecorder();
-				while (true) {
-					Log.d(TAG, "ok#########");
-					try {
-						num = fis.read(buffer, number, frame_size);
-						number += num;
-						if (num < frame_size) {
-							Log.d(TAG, "recoend break,num:" + num);
-							break;
-						}
-					} catch (IOException e) {
-						Log.d(TAG, "exception break");
-						break;
-					}
-				}
-				initializeVideo();
-				number = 0;
+//				try {
+//					sleep(200);
+//				} catch (InterruptedException e1) {
+//					e1.printStackTrace();
+//				}
+//				releaseMediaRecorder();
+//				while (true) {
+//					Log.d(TAG, "ok#########");
+//					try {
+//						num = fis.read(buffer, number, frame_size);
+//						number += num;
+//						if (num < frame_size) {
+//							Log.d(TAG, "recoend break,num:" + num);
+//							break;
+//						}
+//					} catch (IOException e) {
+//						Log.d(TAG, "exception break");
+//						break;
+//					}
+//				}
+//				initializeVideo();
+//				number = 0;
 				// What for end.
-
+				
+				
+//				playMedia();
+				
+				
 				DataInputStream dis = new DataInputStream(fis);
-
-				Log.d(TAG, "dis.read(buffer, 0, 32)");
-				try {
-					dis.read(buffer, 0, 32);
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
 
 				initFile();
 
-				byte[] h264sps = { 0x67, 0x42, 0x00, 0x0C, (byte) 0x96, 0x54,
-						0x0B, 0x04, (byte) 0xA2 };
-				byte[] h264pps = { 0x68, (byte) 0xCE, 0x38, (byte) 0x80 };
-				byte[] h264head = { 0, 0, 0, 1 };
+				Log.d(TAG, "dis.read(buffer, 0, 28)");
 				try {
-					raf.write(h264head);
-					raf.write(h264sps);
-					raf.write(h264head);
-					raf.write(h264pps);
+					dis.read(buffer, 0, 28);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+				byte[] h264head1 = { 0x00, 0x00, 0x00, 0x18 };
+				byte[] h264head2 = { 0x77, 0x69, 0x64, 0x65 };
+
+				// Log.d(TAG, "dis.read(buffer, 0, 32)");
+				// try {
+				// dis.read(buffer, 0, 32);
+				// } catch (IOException e1) {
+				// e1.printStackTrace();
+				// }
+				// byte[] h264sps = { 0x67, 0x42, 0x00, 0x0C, (byte) 0x96, 0x54,
+				// 0x0B, 0x04, (byte) 0xA2 };
+				// byte[] h264pps = { 0x68, (byte) 0xCE, 0x38, (byte) 0x80 };
+				// byte[] h264head = { 0, 0, 0, 1 };
+				try {
+					// raf.write(h264head);
+					// raf.write(h264sps);
+					// raf.write(h264head);
+					// raf.write(h264pps);
+
+					raf.write(buffer);
+					raf.write(h264head2);
+
 				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
+
 				while (true) {
 					try {
 						// 读取每场的长度
+						//TODO The result is a large number, maybe something wrong???
 						int h264length = dis.readInt();
 						number = 0;
-						raf.write(h264head);
+						// raf.write(h264head);
+						// raf.write(aa, 0, 33);
 						while (number < h264length) {
 							int lost = h264length - number;
 							num = fis.read(buffer, 0,
@@ -377,22 +399,11 @@ public class RealVedioRecordSoketActivity extends Activity implements Callback,
 					}
 				}
 
-				//
-				// TODO what these code for??
-
-				// // Begin to publish data. consumer = new Publisher();
+				// // Begin to publish data.
+				// consumer = new Publisher();
 				// consumer.setRecording(true);
 				// Thread consumerThread = new Thread((Runnable) consumer);
 				// consumerThread.start();
-				// consumer.putData(System.currentTimeMillis(), buffer, 33); //
-				// Log.d(TAG, "init aa[]");
-				// byte[] aa = { 0x01, 0x42, (byte) 0x80, 0x0A, (byte) 0xFF,
-				// (byte) 0xE1, 0x00, 0x12, 0x67, 0x42, (byte) 0x80, 0x0A,
-				// (byte) 0xE9, 0x02, (byte) 0xC1, 0x29, 0x08, 0x00, 0x00,
-				// 0x1F, 0x40, 0x00, 0x04, (byte) 0xE2, 0x00, 0x20, 0x01,
-				// 0x00, 0x04, 0x68, (byte) 0xCE, 0x3C, (byte) 0x80 };
-				// consumer.putData(System.currentTimeMillis(), aa, 33);
-				// // What for end.
 				//
 				// while (mMediaRecorderRecording) {
 				// try {

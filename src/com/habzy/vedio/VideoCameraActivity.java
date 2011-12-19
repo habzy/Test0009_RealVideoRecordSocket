@@ -162,7 +162,7 @@ public class VideoCameraActivity extends Activity implements
 				}
 
 				try {
-					File file = new File("/sdcard/stream.3gp");
+					File file = new File("/sdcard/stream.h264");
 					if (file.exists())
 						file.delete();
 					raf = new RandomAccessFile(file, "rw");
