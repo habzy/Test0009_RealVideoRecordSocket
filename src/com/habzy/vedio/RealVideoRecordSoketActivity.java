@@ -28,7 +28,7 @@ import android.widget.RelativeLayout;
 
 public class RealVideoRecordSoketActivity extends Activity implements Callback,
 		MediaRecorder.OnErrorListener, MediaRecorder.OnInfoListener {
-	private static final String TAG = "RealVedioRecordSoketActivity";
+	private static final String TAG = "RealVideoRecordSoketActivity";
 	private static final int MENU_START = 1;
 	private static final int MENU_STOP = 2;
 	private static final int MENU_PLAY = 3;
@@ -116,7 +116,7 @@ public class RealVideoRecordSoketActivity extends Activity implements Callback,
 		case MENU_START: {
 			Log.d(TAG, "MENU_START!");
 			mCameraLayout.setVisibility(View.VISIBLE);
-//			mShownLayout.setVisibility(View.GONE);
+			// mShownLayout.setVisibility(View.GONE);
 			mShownLayout.setVisibility(View.VISIBLE);
 			initializeVideo();
 			startVideoRecording();
@@ -132,7 +132,14 @@ public class RealVideoRecordSoketActivity extends Activity implements Callback,
 
 			if (null != raf) {
 				try {
+
+					// byte[] h264last = { 0x00, 0x00, 0x00, 0x18, 0x75, 0x64,
+					// 0x74, 0x61, 0x00, 0x00, 0x00, 0x10, 0x53, 0x44,
+					// 0x4c, 0x4e, 0x53, 0x45, 0x51, 0x5f, 0x50, 0x4c,
+					// 0x41, 0x59 };
+					// raf.write(h264last);
 					raf.close();
+					Log.d(TAG, "close raf");
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -151,7 +158,7 @@ public class RealVideoRecordSoketActivity extends Activity implements Callback,
 	}
 
 	private void playMedia() {
-//		mCameraLayout.setVisibility(View.GONE);
+		// mCameraLayout.setVisibility(View.GONE);
 
 		if (null == mPlayer) {
 			try {
@@ -159,7 +166,7 @@ public class RealVideoRecordSoketActivity extends Activity implements Callback,
 				mPlayer.setDisplay(mShownSurfaceView.getHolder());
 				// Play with file which record.
 				// mPlayer.setAudioStreamType(AudioManager.)
-//				mPlayer.setDataSource(mRecFile.getAbsolutePath());
+				// mPlayer.setDataSource(mRecFile.getAbsolutePath());
 				mPlayer.setDataSource(receiver.getFileDescriptor());
 				mPlayer.prepare();
 				mPlayer.start();
@@ -309,46 +316,46 @@ public class RealVideoRecordSoketActivity extends Activity implements Callback,
 				}
 
 				// TODO what these code for???
-//				try {
-//					sleep(200);
-//				} catch (InterruptedException e1) {
-//					e1.printStackTrace();
-//				}
-//				releaseMediaRecorder();
-//				while (true) {
-//					Log.d(TAG, "ok#########");
-//					try {
-//						num = fis.read(buffer, number, frame_size);
-//						number += num;
-//						if (num < frame_size) {
-//							Log.d(TAG, "recoend break,num:" + num);
-//							break;
-//						}
-//					} catch (IOException e) {
-//						Log.d(TAG, "exception break");
-//						break;
-//					}
-//				}
-//				initializeVideo();
-//				number = 0;
+				// try {
+				// sleep(200);
+				// } catch (InterruptedException e1) {
+				// e1.printStackTrace();
+				// }
+				// releaseMediaRecorder();
+				// while (true) {
+				// Log.d(TAG, "ok#########");
+				// try {
+				// num = fis.read(buffer, number, frame_size);
+				// number += num;
+				// if (num < frame_size) {
+				// Log.d(TAG, "recoend break,num:" + num);
+				// break;
+				// }
+				// } catch (IOException e) {
+				// Log.d(TAG, "exception break");
+				// break;
+				// }
+				// }
+				// initializeVideo();
+				// number = 0;
 				// What for end.
-				
-				
-//				playMedia();
-				
-				
+
 				DataInputStream dis = new DataInputStream(fis);
 
 				initFile();
 
-				Log.d(TAG, "dis.read(buffer, 0, 28)");
-				try {
-					dis.read(buffer, 0, 28);
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-				byte[] h264head1 = { 0x00, 0x00, 0x00, 0x18 };
-				byte[] h264head2 = { 0x77, 0x69, 0x64, 0x65 };
+				// playMedia();
+
+				Log.d(TAG, "dis.read(buffer, 0, 32)");
+//				try {
+//					dis.read(buffer, 0, 32);
+//				} catch (IOException e1) {
+//					e1.printStackTrace();
+//				}
+//				byte[] h264filehead = { 0x00, 0x00, 0x00, 0x18 };
+//				byte[] h264head = { 0x77, 0x69, 0x64, 0x65 };
+//				byte[] maybeLength = { 0x00, 0x03, 0x30, 0x20 };
+//				byte[] h264head2 = { 0x6d, 0x64, 0x61, 0x74 };
 
 				// Log.d(TAG, "dis.read(buffer, 0, 32)");
 				// try {
@@ -360,24 +367,30 @@ public class RealVideoRecordSoketActivity extends Activity implements Callback,
 				// 0x0B, 0x04, (byte) 0xA2 };
 				// byte[] h264pps = { 0x68, (byte) 0xCE, 0x38, (byte) 0x80 };
 				// byte[] h264head = { 0, 0, 0, 1 };
-				try {
-					// raf.write(h264head);
-					// raf.write(h264sps);
-					// raf.write(h264head);
-					// raf.write(h264pps);
-
-					raf.write(buffer);
-					raf.write(h264head2);
-
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+//				try {
+//					// raf.write(h264head);
+//					// raf.write(h264sps);
+//					// raf.write(h264head);
+//					// raf.write(h264pps);
+//
+//					// 28+4+4+4= 40
+//					// raf.write(h264filehead);
+////					raf.write(buffer, 0, 28);
+////					raf.write(h264head);
+////					raf.write(maybeLength);
+////					raf.write(h264head2);
+//					// Another 8 is not needed.
+//
+//				} catch (IOException e1) {
+//					// TODO Auto-generated catch block
+//					e1.printStackTrace();
+//				}
 
 				while (true) {
 					try {
 						// 读取每场的长度
-						//TODO The result is a large number, maybe something wrong???
+						// TODO The result is a large number, maybe something
+						// wrong???
 						int h264length = dis.readInt();
 						number = 0;
 						// raf.write(h264head);
